@@ -61,49 +61,85 @@ func main() {
 	// jsonFile's content into 'awstranscript' which we defined above
 	json.Unmarshal(byteValue, &awstranscript)
 
-	// some sample examples of outputing the json
-	fmt.Println("Job Name: " + awstranscript.JobName)
-	fmt.Println("Transcript: " + awstranscript.Results.Transcripts[0].Transcript)
-	fmt.Println("Item: " + string(awstranscript.Results.Items[0].Starttime))
-	fmt.Println("Content: " + awstranscript.Results.Items[0].Alternatives[0].Content)
-
 	var transcription []Item
 	transcription = awstranscript.Results.Items
 
 	var index, sequence int = 0, 0
-	var srtinfo, subdetail, subtitle, sttime, classification, text string
+	var srtinfo, subdetail, subtitle, sttime, classification, text, entime string
 	var strlen int
-	subtitle += "!"
+	var firstrow bool
 
-	for index = 0; index < len(transcription); srtinfo += subdetail {
-		strlen = 0
+	for index = 0; index < len(transcription); {
+		//Variable initiation for length of subtitle text, sequence number if its the first line and the subtitle text
 
-		//Grab the start time of the item
+		sequence++
+		firstrow = true
+		subtitle = ""
+
+		//Grab the start time, convert it to a number, then convert the number an SRT valid time string
 		sttime = transcription[index].Starttime
 		fsttime, err := strconv.ParseFloat(sttime, 64)
-
-		sttime = timestr(fsttime)
-
-		fmt.Println(sttime)
 		if err != nil {
 			fmt.Println(err)
 		}
+		sttime = timestr(fsttime)
 
-		//sttime := [timespan]::FromSeconds($sttime)
-		//starttime = "{0:hh}:{0:mm}:{0:ss},{0:fff}" -f $sttime
-		//subtitle := ""
-		sequence++
-		subtitle += "!"
-		subdetail += "!"
-		srtinfo += "!"
-		classification += "!"
-		text += "!"
-		strlen++
-		//firstrow := true
+		/*Repeat this until we have either reached the last item in results
+		#or the length of the lines we are reading is greater than 64 characters */
 
-		index++
+		for strlen = 0; (strlen < 64) && (index < len(transcription)); {
+			text = transcription[index].Alternatives[0].Content
+			strlen += len(text)
+
+			switch classification {
+
+			case "punctuation":
+				if len(subtitle) > 0 {
+					runes := []rune(subtitle)
+					subtitle = string(runes[1 : len(subtitle)-1])
+				} else {
+					subtitle += text
+				}
+			default:
+				subtitle += (text + " ")
+			}
+
+			//If the length of the current string is greater than 32 and this
+			//is the first line of the sequence, then add a return character to it
+
+			if (strlen > 32) && (firstrow == true) {
+				subtitle += "\n"
+				firstrow = false
+			}
+
+			/*If the last character is a '.', then we need to set
+			the end time attribute to the previous indexes one
+			since punctuation characters to not have a time stamp*/
+
+			if classification == "punctuation" {
+				entime = transcription[index-1].Endtime
+			} else {
+				entime = transcription[index].Endtime
+			}
+
+			fsttime, err = strconv.ParseFloat(entime, 64)
+			entime = timestr(fsttime)
+
+			index++
+		}
+		//Setup the string that is refers to these two
+		//lines in SRT format
+
+		subdetail = fmt.Sprintf("\n%d\n%s --> %s\n%s\n", sequence, sttime, entime, subtitle)
+
+		//Append this to the existing string
+		srtinfo += subdetail
 
 	}
+
+	//#Now output the results to our .srt file
+	//$srtinfo | Set-Content $DestinationPath -Force
+	fmt.Println(srtinfo)
 }
 
 func timestr(numerator float64) (timestring string) {
@@ -113,7 +149,6 @@ func timestr(numerator float64) (timestring string) {
 	var s = 1
 
 	integer, frac := math.Modf(numerator)
-
 	integerpart := int(integer)
 
 	hours := integerpart / h
