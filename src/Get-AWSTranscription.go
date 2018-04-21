@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -54,47 +56,85 @@ func main() {
 	}
 
 	//Let's transcribe!!
-	job_name := guid()
-	job_uri := "https://s3-eu-west-1.amazonaws.com/tim-training-thing/videoplayback.mp4"
-	media_format := "mp4"
-	language_code := "en-US"
+	jobname := guid()
+	joburi := "https://s3-eu-west-1.amazonaws.com/tim-training-thing/videoplayback.mp4"
+	//mediaformat := "mp4"
+	//languagecode := "en-US"
 
 	var StrucMedia transcribeservice.Media
-	StrucMedia.MediaFileUri = &job_uri
+	StrucMedia.MediaFileUri = &joburi
 
 	transcriber := transcribeservice.New(sess)
-	startjoboutput, err := transcriber.StartTranscriptionJob(&transcribeservice.StartTranscriptionJobInput{
-		TranscriptionJobName: &job_name,
-		Media:                &StrucMedia,
-		MediaFormat:          &media_format,
-		LanguageCode:         &language_code,
+	/*
+		transcriber.StartTranscriptionJob(&transcribeservice.StartTranscriptionJobInput{
+			TranscriptionJobName: &jobname,
+			Media:                &StrucMedia,
+			MediaFormat:          &mediaformat,
+			LanguageCode:         &languagecode,
+		})
+	*/
+	//Job processing will run async, so it's up to you how you deal with this.
+	//For this one we'll take ten second naps in between checks of the status
+	/*
+		running := true
+		for running == true {
+			transcriptionjoboutput, err := transcriber.GetTranscriptionJob(&transcribeservice.GetTranscriptionJobInput{
+				TranscriptionJobName: &jobname,
+			})
+
+			if err != nil {
+				fmt.Println(err)
+			}
+			strStatus := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobStatus)
+			strJobname := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobName)
+
+			fmt.Printf("Job %s is currently %s\n", strStatus, strJobname)
+			if strStatus != "IN_PROGRESS" {
+				running = false
+			} else {
+				time.Sleep(5 * time.Second)
+			}
+		}
+	*/
+	jobname = "01524-29669-18067-26570"
+	transcriptionjoboutput, err := transcriber.GetTranscriptionJob(&transcribeservice.GetTranscriptionJobInput{
+		TranscriptionJobName: &jobname,
 	})
+
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println(startjoboutput)
-	/*
-		$null = Start-TRSTranscriptionJob -Media_MediaFileUri $s3uri -TranscriptionJobName $jobname -MediaFormat mp4 -LanguageCode en-US @AWSDefaultParameters
+	strStatus := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobStatus)
+	if strStatus == "COMPLETED" {
+		uri := transcriptionjoboutput.TranscriptionJob.Transcript.TranscriptFileUri
+		filename := "/Users/timpringle/Desktop/videoplayback.srt"
+		DownloadFile(filename, *uri)
+	}
+}
 
-			#Job processing will run async, so it's up to you how you deal with this.
-			#For this one we'll take ten second naps in between checks of the status
-			$results = Get-TRSTranscriptionJob -TranscriptionJobName $jobname @AWSDefaultParameters
+func DownloadFile(filepath string, url string) error {
 
-			While ($results.TranscriptionJobStatus -eq 'IN_PROGRESS') {
-				Start-Sleep -Seconds 5
-				$results = Get-TRSTranscriptionJob -TranscriptionJobName $jobname @AWSDefaultParameters
-			}
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
 
-			If ($results.TranscriptionJobStatus -eq 'COMPLETED') {
-				$transcripturi = $results.Transcript.TranscriptFileUri
-				Invoke-Webrequest -Uri $transcripturi -OutFile $resultsfile
-				$output = Get-Content $resultsfile
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-				#Let's clear up the json file that was created
-				Remove-Item -Path $resultsfile -Force
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
 
-				#Output the results
-				$output
-	*/
+	}
+
+	return nil
 }
