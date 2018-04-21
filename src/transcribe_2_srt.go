@@ -3,10 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"math"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,48 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/transcribeservice"
 )
 
-type Awstranscript struct {
-	JobName   string `json:"jobName"`
-	Accountid string `json:"accountId"`
-	Results   Result `json:"results"`
-	Status    string `json:"status"`
-}
-
-type Result struct {
-	Transcripts []Transcript `json:"transcripts"`
-	Items       []Item       `json:"items"`
-}
-
-type Transcript struct {
-	Transcript string `json:"transcript"`
-}
-
-type Item struct {
-	Starttime      string        `json:"start_time"`
-	Endtime        string        `json:"end_time"`
-	Alternatives   []Alternative `json:"alternatives"`
-	Classification string        `json:"type"`
-}
-
-type Alternative struct {
-	Confidence string `json:"confidence"`
-	Content    string `json:"content"`
-}
-
-func guid() (guid string) {
-	ad, err := time.Parse("02-01-2006", "01-01-1970")
-
-	if err != nil {
-	}
-
-	timesince := time.Since(ad).Nanoseconds()
-	strsince := strconv.FormatInt(timesince, 10)
-	guid = fmt.Sprintf("0" + strsince[0:4] + "-" + strsince[4:9] + "-" + strsince[9:14] + "-" + strsince[14:19])
-	return
-}
-
 func main() {
-	//Set the S3 uri prefix and create a unique guid to be used as the job name
 
 	//resultsfile := "/Users/timpringle/Downloads/asrOutput.json"
 	bucket := "tim-training-thing"
@@ -86,8 +42,8 @@ func main() {
 		fmt.Println(err)
 	}
 
-	//Let's transcribe!!
-	jobname := guid()
+	//Set the S3 uri for the file location and create a unique guid to be used as the job name
+	jobname := GUID()
 	joburi := "https://s3-eu-west-1.amazonaws.com/tim-training-thing/AWS Summit San Francisco 2018 - Amazon Transcribe Now Generally Available.mp4"
 	mediaformat := "mp4"
 	languagecode := "en-US"
@@ -105,7 +61,7 @@ func main() {
 	})
 
 	//Job processing will run async, so it's up to you how you deal with this.
-	//For this one we'll take ten second naps in between checks of the status
+	//For this one we'll take 5 second naps in between checks of the status
 
 	running := true
 	var strStatus, strJobname string
@@ -189,7 +145,7 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
-		sttime = timestr(fsttime)
+		sttime = getsrttime(fsttime)
 
 		/*Repeat this until we have either reached the last item in results
 		#or the length of the lines we are reading is greater than 64 characters */
@@ -230,7 +186,7 @@ func main() {
 			}
 
 			fsttime, err = strconv.ParseFloat(entime, 64)
-			entime = timestr(fsttime)
+			entime = getsrttime(fsttime)
 
 			index++
 		}
@@ -252,55 +208,4 @@ func main() {
 	_, err = out.WriteString(srtinfo)
 
 	fmt.Println(srtinfo)
-}
-
-func DownloadFile(filepath string, url string) error {
-
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-
-	}
-
-	return nil
-}
-
-func timestr(numerator float64) (timestring string) {
-
-	var h = 3600
-	var m = 60
-	var s = 1
-
-	integer, frac := math.Modf(numerator)
-	integerpart := int(integer)
-
-	hours := integerpart / h
-	remainder := integerpart % h
-
-	minutes := remainder / m
-	remainder = remainder % m
-
-	seconds := remainder / s
-	stringfrac := strconv.FormatFloat(frac, 'f', 3, 64)
-	runes := []rune(stringfrac)
-	safeSubstring := string(runes[1:len(stringfrac)])
-
-	timestring = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
-	timestring += safeSubstring
-	return
 }
