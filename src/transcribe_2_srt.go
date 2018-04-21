@@ -16,8 +16,6 @@ import (
 )
 
 func main() {
-
-	//resultsfile := "/Users/timpringle/Downloads/asrOutput.json"
 	bucket := "tim-training-thing"
 	filename := "/Users/timpringle/Downloads/AWS Summit San Francisco 2018 - Amazon Transcribe Now Generally Available.mp4"
 	//Lets set default parameter values for the aws cmdlets
