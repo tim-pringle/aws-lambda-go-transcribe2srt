@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 
+	"github.com/tim-pringle/go-misc/misc"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
@@ -24,7 +26,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	// stdout and stderr are sent to AWS CloudWatch Logs
 	log.Printf("Processing Lambda request %s\n", request.RequestContext.RequestID)
 
-	jobname := GUID()
+	jobname := misc.GUID()
 	log.Printf("Job name created %s\n", jobname)
 
 	joburi := "https://s3-eu-west-1.amazonaws.com/tim-training-thing/AWS Summit San Francisco 2018 - Amazon Transcribe Now Generally Available.mp4"

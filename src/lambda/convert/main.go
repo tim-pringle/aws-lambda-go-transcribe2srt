@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/tim-pringle/go-misc/misc"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
@@ -119,7 +121,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		if err != nil {
 			fmt.Println(err)
 		}
-		sttime = getsrttime(fsttime)
+		sttime = misc.Getsrttime(fsttime)
 
 		/*Repeat this until we have either reached the last item in results
 		#or the length of the lines we are reading is greater than 64 characters */
