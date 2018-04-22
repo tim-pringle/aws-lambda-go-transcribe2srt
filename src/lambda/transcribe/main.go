@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/tim-pringle/go-misc/misc"
@@ -21,68 +23,48 @@ var (
 // Handler is your Lambda function handler
 // It uses Amazon API Gateway request/responses provided by the aws-lambda-go/events package,
 // However you could use other event sources (S3, Kinesis etc), or JSON-decoded primitive types such as 'string'.
-func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func Handler(ctx context.Context, s3Event events.S3Event) {
+	for _, record := range s3Event.Records {
+		s3 := record.S3
 
-	// stdout and stderr are sent to AWS CloudWatch Logs
-	log.Printf("Processing Lambda request %s\n", request.RequestContext.RequestID)
+		fmt.Printf("[%s - %s] Bucket = %s, Key = %s  URL DecodedKey = %s \n", record.EventSource, record.EventTime, s3.Bucket.Name, s3.Object.Key, s3.Object.URLDecodedKey)
 
-	jobname := misc.GUID()
-	log.Printf("Job name created %s\n", jobname)
+		// stdout and stderr are sent to AWS CloudWatch Logs
 
-	joburi := "https://s3-eu-west-1.amazonaws.com/tim-training-thing/AWS Summit San Francisco 2018 - Amazon Transcribe Now Generally Available.mp4"
-	mediaformat := "mp4"
-	languagecode := "en-US"
+		jobname := misc.GUID()
+		log.Printf("Job name created %s\n", jobname)
 
-	sess, _ := session.NewSessionWithOptions(session.Options{
-		Config:  aws.Config{Region: aws.String("eu-west-1")},
-		Profile: "development",
-	})
+		joburi := fmt.Sprintf("https://s3-eu-west-1.amazonaws.com/%s/%s", s3.Bucket.Name, s3.Object.Key)
+		log.Printf("Job uri : %s\n", joburi)
 
-	log.Printf("Opening Transcribe session %s\n", request.RequestContext.RequestID)
-	transcriber := transcribeservice.New(sess)
-	if transcriber == nil {
-		log.Printf("Unable to create Transcribe session %s\n", request.RequestContext.RequestID)
-	} else {
-		log.Printf("Transcribe session successfully created %s\n", request.RequestContext.RequestID)
+		mediaformat := "mp4"
+		languagecode := "en-US"
+
+		sess, _ := session.NewSessionWithOptions(session.Options{
+			Config:  aws.Config{Region: aws.String("eu-west-1")},
+			Profile: "development",
+		})
+
+		log.Printf("Opening Transcribe session\n")
+		transcriber := transcribeservice.New(sess)
+		if transcriber == nil {
+			log.Printf("Unable to create Transcribe session\n")
+		} else {
+			log.Printf("Transcribe session successfully created\n")
+		}
+
+		log.Printf("Creating transcription job\n")
+
+		var StrucMedia transcribeservice.Media
+		StrucMedia.MediaFileUri = &joburi
+
+		transcriber.StartTranscriptionJob(&transcribeservice.StartTranscriptionJobInput{
+			TranscriptionJobName: &jobname,
+			Media:                &StrucMedia,
+			MediaFormat:          &mediaformat,
+			LanguageCode:         &languagecode,
+		})
 	}
-
-	log.Printf("Creating transcription job %s\n", request.RequestContext.RequestID)
-
-	var StrucMedia transcribeservice.Media
-	StrucMedia.MediaFileUri = &joburi
-
-	transcriber.StartTranscriptionJob(&transcribeservice.StartTranscriptionJobInput{
-		TranscriptionJobName: &jobname,
-		Media:                &StrucMedia,
-		MediaFormat:          &mediaformat,
-		LanguageCode:         &languagecode,
-	})
-
-	transcriptionjoboutput, err := transcriber.GetTranscriptionJob(&transcribeservice.GetTranscriptionJobInput{
-		TranscriptionJobName: &jobname,
-	})
-
-	if err != nil {
-		log.Printf("Unable to get job output %s\n", request.RequestContext.RequestID)
-	} else {
-		log.Printf("Retrieved job output %s\n", request.RequestContext.RequestID)
-	}
-
-	strStatus := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobStatus)
-	strJobname := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobName)
-	var strFailureReason *string
-
-	if strStatus == "FAILED" {
-		strFailureReason = transcriptionjoboutput.TranscriptionJob.FailureReason
-		var ErrTransctibeFailure = errors.New(*strFailureReason)
-		return events.APIGatewayProxyResponse{}, ErrTransctibeFailure
-	}
-	//Success is denoted by the function not already having exited via error checks
-	return events.APIGatewayProxyResponse{
-		Body:       strJobname,
-		StatusCode: 200,
-	}, nil
-
 }
 
 func main() {
