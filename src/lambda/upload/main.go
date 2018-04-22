@@ -17,8 +17,7 @@ func main() {
 
 	bucket := flag.String("bucket", "tim-training-thing", "The s3 bucket to upload to")
 	filename := flag.String("filename", "", "The file to be uploaded")
-
-	//Lets set default parameter values for the aws cmdlets
+	flag.Parse()
 
 	sess, _ := session.NewSessionWithOptions(session.Options{
 		Config:  aws.Config{Region: aws.String("eu-west-1")},
@@ -28,6 +27,12 @@ func main() {
 	uploader := s3manager.NewUploader(sess)
 
 	file, err := os.Open(*filename)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
 	key := filepath.Base(file.Name())
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
@@ -39,4 +44,5 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 }
