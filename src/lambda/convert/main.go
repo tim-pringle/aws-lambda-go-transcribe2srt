@@ -21,11 +21,10 @@ import (
 )
 
 var (
-	// ErrJobnameNotProvided is thrown when a name is not provided
-	ErrJobnameNotProvided = errors.New("No job number was provided in the HTTP body")
-	ErrTranscribeRunning  = errors.New("Job is still running")
-	ErrTranscribeFailure  = errors.New("There was a problem running the job")
-	ErrGeneral            = errors.New("An unknown error occurred")
+	ErrJobnameNotProvided = errors.New("No job number has been provided HTTP body")
+	ErrTranscribeRunning  = errors.New("The transcription job is running")
+	ErrTranscribeFailure  = errors.New("The transcription job has failed")
+	ErrJobDoesntExist     = errors.New("An unknown error occurred")
 	jobname               string
 )
 
@@ -43,9 +42,8 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	})
 
 	if len(request.Body) < 1 {
-		//return events.APIGatewayProxyResponse{}, ErrJobnameNotProvided
-		log.Printf("No content in body, using default job number")
-		jobname = "01524-38742-85260-18023"
+		log.Printf("No content in body")
+		return events.APIGatewayProxyResponse{}, ErrJobnameNotProvided
 	} else {
 		log.Printf("Job number received %s", jobname)
 		jobname = request.Body
@@ -60,9 +58,9 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	})
 
 	if err != nil {
-		log.Printf("Unable to get transcription job %s", jobname)
-		log.Printf(err.Error())
-		return events.APIGatewayProxyResponse{}, ErrGeneral
+		ErrMsg := errors.New(err.Error())
+		log.Printf("%s", err.Error())
+		return events.APIGatewayProxyResponse{}, ErrMsg
 	}
 	strStatus := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobStatus)
 	log.Printf("Job status is %s", strStatus)
