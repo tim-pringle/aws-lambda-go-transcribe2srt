@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/tim-pringle/go-aws/transcribe"
+
 	"github.com/tim-pringle/go-misc/misc"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -94,13 +96,13 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	// initialize our variable to hold the json
-	var awstranscript Awstranscript
+	var awstranscript transcribe.Awstranscript
 
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'awstranscript' which we defined above
 	json.Unmarshal(body, &awstranscript)
 
-	var transcription []Item
+	var transcription []transcribe.Item
 	transcription = awstranscript.Results.Items
 
 	var index, sequence int = 0, 0
@@ -162,7 +164,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			}
 
 			fsttime, err = strconv.ParseFloat(entime, 64)
-			entime = getsrttime(fsttime)
+			entime = misc.Getsrttime(fsttime)
 
 			index++
 		}
