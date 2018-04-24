@@ -58,13 +58,27 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 	} else if (strings.Contains(streventinfo, "currentIntent")) && (strings.Contains(streventinfo, "userId")) {
 		var lexrq events.LexEvent
 		err := json.Unmarshal(data, &lexrq)
-		//convert
+		if err != nil {
+
+		}
+		jobname = lexrq.InputTranscript
+		subtitles, converterror := Convert(jobname)
 		var response LexResponse
-		response.DialogAction.Type = "Close"
-		response.DialogAction.FulfillmentState = "Fulfilled"
-		response.DialogAction.Message.ContentType = "PlainText"
-		response.DialogAction.Message.Content = "It's a flucking Lex request"
-		return response, err
+
+		if converterror != nil {
+			response.DialogAction.Type = "Close"
+			response.DialogAction.FulfillmentState = "Fulfilled"
+			response.DialogAction.Message.ContentType = "PlainText"
+			response.DialogAction.Message.Content = "Error!!!!!"
+			return response, converterror
+		} else {
+			response.DialogAction.Type = "Close"
+			response.DialogAction.FulfillmentState = "Fulfilled"
+			response.DialogAction.Message.ContentType = "PlainText"
+			response.DialogAction.Message.Content = subtitles
+			return response, nil
+		}
+
 	} else {
 		unsupported := errors.New("Unsupported service")
 		return nil, unsupported
