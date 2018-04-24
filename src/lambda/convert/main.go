@@ -1,190 +1,71 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"strconv"
-
-	"github.com/tim-pringle/go-aws/transcribe"
-
-	"github.com/tim-pringle/go-misc/misc"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/transcribeservice"
 )
 
 var (
-	ErrJobnameNotProvided = errors.New("No job number has been provided HTTP body")
-	ErrTranscribeRunning  = errors.New("The transcription job is running")
-	ErrTranscribeFailure  = errors.New("The transcription job has failed")
-	ErrJobDoesntExist     = errors.New("An unknown error occurred")
-	jobname               string
+	jobname string
 )
 
-// Handler is your Lambda function handler
-// It uses Amazon API Gateway request/responses provided by the aws-lambda-go/events package,
-// However you could use other event sources (S3, Kinesis etc), or JSON-decoded primitive types such as 'string'.
-func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-
-	// stdout and stderr are sent to AWS CloudWatch Logs
-	log.Printf("Processing Lambda request %s\n", request.RequestContext.RequestID)
-
-	sess, _ := session.NewSessionWithOptions(session.Options{
-		Config:  aws.Config{Region: aws.String("eu-west-1")},
-		Profile: "development",
-	})
-
-	if len(request.Body) < 1 {
-		log.Printf("No content in body")
-		return events.APIGatewayProxyResponse{}, ErrJobnameNotProvided
-	} else {
-		log.Printf("Job number received %s", jobname)
-		jobname = request.Body
-	}
-
-	log.Printf("Creating new session")
-	transcriber := transcribeservice.New(sess)
-
-	log.Printf("Getting transcription job")
-	transcriptionjoboutput, err := transcriber.GetTranscriptionJob(&transcribeservice.GetTranscriptionJobInput{
-		TranscriptionJobName: &jobname,
-	})
-
-	if err != nil {
-		ErrMsg := errors.New(err.Error())
-		log.Printf("%s", err.Error())
-		return events.APIGatewayProxyResponse{}, ErrMsg
-	}
-	strStatus := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobStatus)
-	log.Printf("Job status is %s", strStatus)
-
-	var strFailureReason *string
-
-	if strStatus == "FAILED" {
-		strFailureReason = transcriptionjoboutput.TranscriptionJob.FailureReason
-		return events.APIGatewayProxyResponse{
-			Body:       *strFailureReason,
-			StatusCode: 200,
-		}, ErrTranscribeFailure
-	}
-	if strStatus == "IN_PROGRESS" {
-		return events.APIGatewayProxyResponse{}, ErrTranscribeRunning
-	}
-
-	var uri *string
-	uri = transcriptionjoboutput.TranscriptionJob.Transcript.TranscriptFileUri
-	log.Printf("URI is %s", *uri)
-
-	response, _ := http.Get(*uri)
-	defer response.Body.Close()
-	body, _ := ioutil.ReadAll(response.Body)
-
-	//str := string(body[:])
-
-	//If there's an error, print the error
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// initialize our variable to hold the json
-	var awstranscript transcribe.Awstranscript
-
-	// we unmarshal our byteArray which contains our
-	// jsonFile's content into 'awstranscript' which we defined above
-	json.Unmarshal(body, &awstranscript)
-
-	var transcription []transcribe.Item
-	transcription = awstranscript.Results.Items
-
-	var index, sequence int = 0, 0
-	var srtinfo, subdetail, subtitle, sttime, classification, text, entime string
-	var strlen int
-	var firstrow bool
-
-	for index = 0; index < len(transcription); {
-		//Variable initiation for length of subtitle text, sequence number if its the first line and the subtitle text
-
-		sequence++
-		firstrow = true
-		subtitle = ""
-
-		//Grab the start time, convert it to a number, then convert the number an SRT valid time string
-		sttime = transcription[index].Starttime
-		fsttime, err := strconv.ParseFloat(sttime, 64)
-		if err != nil {
-			fmt.Println(err)
-		}
-		sttime = misc.Getsrttime(fsttime)
-
-		/*Repeat this until we have either reached the last item in results
-		#or the length of the lines we are reading is greater than 64 characters */
-
-		for strlen = 0; (strlen < 64) && (index < len(transcription)); {
-			text = transcription[index].Alternatives[0].Content
-			strlen += len(text)
-
-			switch classification {
-
-			case "punctuation":
-				if len(subtitle) > 0 {
-					runes := []rune(subtitle)
-					subtitle = string(runes[1 : len(subtitle)-1])
-				} else {
-					subtitle += text
-				}
-			default:
-				subtitle += (text + " ")
-			}
-
-			//If the length of the current string is greater than 32 and this
-			//is the first line of the sequence, then add a return character to it
-
-			if (strlen > 32) && (firstrow == true) {
-				subtitle += "\n"
-				firstrow = false
-			}
-
-			/*If the last character is a '.', then we need to set
-			the end time attribute to the previous indexes one
-			since punctuation characters to not have a time stamp*/
-
-			if classification == "punctuation" {
-				entime = transcription[index-1].Endtime
-			} else {
-				entime = transcription[index].Endtime
-			}
-
-			fsttime, err = strconv.ParseFloat(entime, 64)
-			entime = misc.Getsrttime(fsttime)
-
-			index++
-		}
-		//Setup the string that is refers to these two
-		//lines in SRT format
-
-		subdetail = fmt.Sprintf("\n%d\n%s --> %s\n%s\n", sequence, sttime, entime, subtitle)
-
-		//Append this to the existing string
-		srtinfo += subdetail
-
-	}
-
-	log.Printf(srtinfo)
-
-	return events.APIGatewayProxyResponse{
-		Body:       srtinfo,
-		StatusCode: 200,
-	}, nil
-
+type LexResponse struct {
+	SessionAttributes struct {
+	} `json:"sessionAttributes"`
+	DialogAction struct {
+		Type             string `json:"type"`
+		FulfillmentState string `json:"fulfillmentState"`
+		Message          struct {
+			ContentType string `json:"contentType"`
+			Content     string `json:"content"`
+		} `json:"message"`
+	} `json:"dialogAction"`
 }
 
-func main() {
-	lambda.Start(Handler)
+func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
+
+	//Marshal the eventinfo
+	data, _ := json.Marshal(eventinfo)
+	streventinfo := string(data)
+
+	//Lets try and cast this into a WebProxy Request
+
+	if (strings.Contains(streventinfo, "httpMethod")) && (strings.Contains(streventinfo, "headers")) {
+		var request events.APIGatewayProxyRequest
+		err := json.Unmarshal(data, &request)
+		if len(request.Body) < 1 {
+			log.Printf("No content in body")
+			return "", err
+		}
+		jobname = request.Body
+		subtitles, converterror := Convert(jobname)
+		var response events.APIGatewayProxyResponse
+		if converterror != nil {
+			response.Body = "Server error"
+			response.StatusCode = 400
+		} else {
+			response.Body = subtitles
+			response.StatusCode = 200
+		}
+
+		return response, nil
+	} else if (strings.Contains(streventinfo, "currentIntent")) && (strings.Contains(streventinfo, "userId")) {
+		var lexrq events.LexEvent
+		err := json.Unmarshal(data, &lexrq)
+		//convert
+		var response LexResponse
+		response.DialogAction.Type = "Close"
+		response.DialogAction.FulfillmentState = "Fulfilled"
+		response.DialogAction.Message.ContentType = "PlainText"
+		response.DialogAction.Message.Content = "It's a flucking Lex request"
+		return response, err
+	} else {
+		unsupported := errors.New("Unsupported service")
+		return nil, unsupported
+	}
 }
