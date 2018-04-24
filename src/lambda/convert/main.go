@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var (
@@ -68,4 +69,8 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 		unsupported := errors.New("Unsupported service")
 		return nil, unsupported
 	}
+}
+
+func main() {
+	lambda.Start(Handler)
 }

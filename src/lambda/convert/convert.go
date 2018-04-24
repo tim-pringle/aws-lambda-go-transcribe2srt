@@ -163,7 +163,3 @@ func Convert(jobname string) (string, error) {
 
 	return srtinfo, nil
 }
-
-func main() {
-
-}
