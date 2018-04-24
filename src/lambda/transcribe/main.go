@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/tim-pringle/go-misc/misc"
 
@@ -28,7 +29,13 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 		s3 := record.S3
 
 		fmt.Printf("[%s - %s] Bucket = %s, Key = %s  URL DecodedKey = %s \n", record.EventSource, record.EventTime, s3.Bucket.Name, s3.Object.Key, s3.Object.URLDecodedKey)
-
+		var key string = s3.Object.Key
+		index := (len(key)) - 4
+		substring := key[index:]
+		if strings.ToUpper(substring) != ".MP4" {
+			fmt.Printf("The object %s is not an mp4 file", s3.Object.Key)
+			return
+		}
 		// stdout and stderr are sent to AWS CloudWatch Logs
 
 		jobname := misc.GUID()
