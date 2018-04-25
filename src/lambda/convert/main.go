@@ -34,7 +34,7 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 	data, _ := json.Marshal(eventinfo)
 	streventinfo := string(data)
 
-	//Lets try and cast this into a WebProxy Request
+	//Lets have a look at the request
 
 	if (strings.Contains(streventinfo, "httpMethod")) && (strings.Contains(streventinfo, "headers")) {
 		var request events.APIGatewayProxyRequest
