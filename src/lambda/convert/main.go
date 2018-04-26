@@ -15,27 +15,34 @@ var (
 	jobname string
 )
 
-type LexResponse struct {
-	SessionAttributes struct {
-	} `json:"sessionAttributes"`
-	DialogAction struct {
-		Type             string `json:"type"`
-		FulfillmentState string `json:"fulfillmentState"`
-		Message          struct {
-			ContentType string `json:"contentType"`
-			Content     string `json:"content"`
-		} `json:"message"`
-	} `json:"dialogAction"`
-}
-
 func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 
 	//Marshal the eventinfo
 	data, _ := json.Marshal(eventinfo)
 	streventinfo := string(data)
 
+	data, _ = json.Marshal(ctx)
+	strcontextinfo := string(data)
+
+	//Lets log the request for reference
+	log.Printf("-----------------CONTEXT INFO-----------------")
+	log.Printf(streventinfo)
+	log.Printf("-----------------CONTEXT INFO-----------------")
+	log.Printf("")
+	log.Printf("-----------------EVENT INFO-------------------")
+	log.Printf(strcontextinfo)
+	log.Printf("-----------------EVENT INFO-------------------")
+	log.Printf("")
+
 	//Lets have a look at the request
 
+	//Alex Request
+	if (strings.Contains(streventinfo, "LaunchRequest")) && (strings.Contains(streventinfo, "amazonalexa")) {
+		jobname = "01524-63806-28098-90622"
+		subtitles, converterror := Convert(jobname)
+
+	}
+	// API Gateway Request
 	if (strings.Contains(streventinfo, "httpMethod")) && (strings.Contains(streventinfo, "headers")) {
 		var request events.APIGatewayProxyRequest
 		err := json.Unmarshal(data, &request)
@@ -55,6 +62,7 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 		}
 
 		return response, nil
+		//Lex Request
 	} else if (strings.Contains(streventinfo, "currentIntent")) && (strings.Contains(streventinfo, "userId")) {
 		var lexrq events.LexEvent
 		err := json.Unmarshal(data, &lexrq)
