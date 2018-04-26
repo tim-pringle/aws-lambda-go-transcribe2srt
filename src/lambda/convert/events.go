@@ -1,89 +1,99 @@
 package main
 
+import "time"
+
 type AlexaRequest struct {
-	Version string `json:"version"`
-	Session struct {
-		New         bool   `json:"new"`
-		SessionID   string `json:"sessionId"`
-		Application struct {
-			ApplicationID string `json:"applicationId"`
-		} `json:"application"`
-		Attributes struct {
-			Key string `json:"key"`
-		} `json:"attributes"`
-		User struct {
-			UserID      string `json:"userId"`
-			AccessToken string `json:"accessToken"`
-			Permissions struct {
-				ConsentToken string `json:"consentToken"`
-			} `json:"permissions"`
-		} `json:"user"`
-	} `json:"session"`
 	Context struct {
+		AudioPlayer struct {
+			PlayerActivity string `json:"playerActivity"`
+		} `json:"AudioPlayer"`
+		Display struct {
+		} `json:"Display"`
 		System struct {
+			APIAccessToken string `json:"apiAccessToken"`
+			APIEndpoint    string `json:"apiEndpoint"`
+			Application    struct {
+				ApplicationID string `json:"applicationId"`
+			} `json:"application"`
 			Device struct {
 				DeviceID            string `json:"deviceId"`
 				SupportedInterfaces struct {
 					AudioPlayer struct {
 					} `json:"AudioPlayer"`
+					Display struct {
+						MarkupVersion   string `json:"markupVersion"`
+						TemplateVersion string `json:"templateVersion"`
+					} `json:"Display"`
 				} `json:"supportedInterfaces"`
 			} `json:"device"`
-			Application struct {
-				ApplicationID string `json:"applicationId"`
-			} `json:"application"`
 			User struct {
-				UserID      string `json:"userId"`
-				AccessToken string `json:"accessToken"`
-				Permissions struct {
-					ConsentToken string `json:"consentToken"`
-				} `json:"permissions"`
+				UserID string `json:"userId"`
 			} `json:"user"`
-			APIEndpoint    string `json:"apiEndpoint"`
-			APIAccessToken string `json:"apiAccessToken"`
 		} `json:"System"`
-		AudioPlayer struct {
-			PlayerActivity       string `json:"playerActivity"`
-			Token                string `json:"token"`
-			OffsetInMilliseconds int    `json:"offsetInMilliseconds"`
-		} `json:"AudioPlayer"`
 	} `json:"context"`
 	Request struct {
+		Locale                     string    `json:"locale"`
+		RequestID                  string    `json:"requestId"`
+		ShouldLinkResultBeReturned bool      `json:"shouldLinkResultBeReturned"`
+		Timestamp                  time.Time `json:"timestamp"`
+		Type                       string    `json:"type"`
 	} `json:"request"`
+	Session struct {
+		Application struct {
+			ApplicationID string `json:"applicationId"`
+		} `json:"application"`
+		New       bool   `json:"new"`
+		SessionID string `json:"sessionId"`
+		User      struct {
+			UserID string `json:"userId"`
+		} `json:"user"`
+	} `json:"session"`
+	Version string `json:"version"`
+}
+
+type SessionAttributes struct {
+	Key string `json:"key,omitempty"`
+}
+
+type Card struct {
+	Type    string `json:"type,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Content string `json:"content,omitempty"`
+	Text    string `json:"text,omitempty"`
+	Image   Image  `json:"image,omitempty"`
+}
+
+type Image struct {
+	SmallImageURL string `json:"smallImageUrl,omitempty"`
+	LargeImageURL string `json:"largeImageUrl,omitempty"`
+}
+
+type Reprompt struct {
+	OutputSpeech OutputSpeech `json:"outputSpeech,omitempty"`
+}
+
+type OutputSpeech struct {
+	Type string  `json:"type,omitempty"`
+	Text *string `json:"text,omitempty"`
+	Ssml *string `json:"ssml,omitempty"`
+}
+
+type Directives []struct {
+	Type string `json:"type,omitempty"`
+}
+
+type Response struct {
+	OutputSpeech     OutputSpeech `json:"outputSpeech,omitempty"`
+	Card             *Card        `json:"card,omitempty"`
+	Reprompt         *Reprompt    `json:"reprompt,omitempty"`
+	ShouldEndSession *bool        `json:"shouldEndSession,omitempty"`
+	Directives       *Directives  `json:"directives,omitempty"`
 }
 
 type AlexaResponse struct {
-	Version           string `json:"version"`
-	SessionAttributes struct {
-		Key string `json:"key"`
-	} `json:"sessionAttributes"`
-	Response struct {
-		OutputSpeech struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-			Ssml string `json:"ssml"`
-		} `json:"outputSpeech"`
-		Card struct {
-			Type    string `json:"type"`
-			Title   string `json:"title"`
-			Content string `json:"content"`
-			Text    string `json:"text"`
-			Image   struct {
-				SmallImageURL string `json:"smallImageUrl"`
-				LargeImageURL string `json:"largeImageUrl"`
-			} `json:"image"`
-		} `json:"card"`
-		Reprompt struct {
-			OutputSpeech struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
-				Ssml string `json:"ssml"`
-			} `json:"outputSpeech"`
-		} `json:"reprompt"`
-		Directives []struct {
-			Type string `json:"type"`
-		} `json:"directives"`
-		ShouldEndSession bool `json:"shouldEndSession"`
-	} `json:"response"`
+	Version           string             `json:"version,omitempty"`
+	SessionAttributes *SessionAttributes `json:"sessionAttributes,omitempty"`
+	Response          Response           `json:"response,omitempty"`
 }
 
 type LexResponse struct {

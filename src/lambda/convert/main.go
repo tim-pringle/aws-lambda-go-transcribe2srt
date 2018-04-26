@@ -21,25 +21,36 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 	data, _ := json.Marshal(eventinfo)
 	streventinfo := string(data)
 
-	data, _ = json.Marshal(ctx)
-	strcontextinfo := string(data)
-
 	//Lets log the request for reference
-	log.Printf("-----------------CONTEXT INFO-----------------")
+	log.Printf("-----------------EVENT INFO-------------------")
 	log.Printf(streventinfo)
-	log.Printf("-----------------CONTEXT INFO-----------------")
-	log.Printf("")
 	log.Printf("-----------------EVENT INFO-------------------")
-	log.Printf(strcontextinfo)
-	log.Printf("-----------------EVENT INFO-------------------")
-	log.Printf("")
 
 	//Lets have a look at the request
 
 	//Alex Request
-	if (strings.Contains(streventinfo, "LaunchRequest")) && (strings.Contains(streventinfo, "amazonalexa")) {
-		jobname = "01524-63806-28098-90622"
-		subtitles, converterror := Convert(jobname)
+	if (strings.Contains(streventinfo, "LaunchRequest")) || (strings.Contains(streventinfo, "IntentRequest")) || (strings.Contains(streventinfo, "SessionEndedRequest")) {
+		var request AlexaRequest
+		err := json.Unmarshal(data, &request)
+		log.Printf("Alexa request received")
+		if err != nil {
+			log.Printf("Problem encountered unmarshalling request to Alex Response struct")
+		}
+		log.Printf("-----------------MARSHALED DATA-------------------")
+		log.Printf("%+v", request)
+		log.Printf("-----------------MARSHALED DATA-------------------")
+
+		var response AlexaResponse
+		response.Version = "1.0"
+		response.Response.OutputSpeech.Type = "PlainText"
+		*response.Response.OutputSpeech.Text = "Yo whatever"
+
+		log.Printf("-----------------LAMBDA RESPONSE-------------------")
+		log.Printf("%+v", response)
+		log.Printf("-----------------LAMBDA REPSONSE-------------------")
+		return response, nil
+		//jobname = "01524-63806-28098-90622"
+		//subtitles, converterror := Convert(jobname)
 
 	}
 	// API Gateway Request
