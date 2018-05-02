@@ -43,7 +43,11 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 		var response AlexaResponse
 		response.Version = "1.0"
 		response.Response.OutputSpeech.Type = "PlainText"
-		*response.Response.OutputSpeech.Text = "Yo whatever"
+		response.Response.OutputSpeech.Text = "Chip and Clouds life is none of your business Tim. I think you'd better watch yourself otherwise there will be many many animals with tiny paws tapping at your window!"
+		response.SessionAttributes = nil
+		response.Response.Card = nil
+		response.Response.Reprompt = nil
+		response.Response.ShouldEndSession = true
 
 		log.Printf("-----------------LAMBDA RESPONSE-------------------")
 		log.Printf("%+v", response)

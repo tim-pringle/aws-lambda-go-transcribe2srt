@@ -73,21 +73,22 @@ type Reprompt struct {
 }
 
 type OutputSpeech struct {
-	Type string  `json:"type,omitempty"`
-	Text *string `json:"text,omitempty"`
-	Ssml *string `json:"ssml,omitempty"`
+	Type string `json:"type,omitempty"`
+	Text string `json:"text,omitempty"`
+	Ssml string `json:"ssml,omitempty"`
 }
 
-type Directives []struct {
-	Type string `json:"type,omitempty"`
+type Directives struct {
+	Type         string `json:"type,omitempty"`
+	SlotToElicit string `json:"slotToElicit,omitempty"`
 }
 
 type Response struct {
 	OutputSpeech     OutputSpeech `json:"outputSpeech,omitempty"`
 	Card             *Card        `json:"card,omitempty"`
 	Reprompt         *Reprompt    `json:"reprompt,omitempty"`
-	ShouldEndSession *bool        `json:"shouldEndSession,omitempty"`
-	Directives       *Directives  `json:"directives,omitempty"`
+	ShouldEndSession bool         `json:"shouldEndSession"`
+	Directives       []Directives `json:"directives,omitempty"`
 }
 
 type AlexaResponse struct {
