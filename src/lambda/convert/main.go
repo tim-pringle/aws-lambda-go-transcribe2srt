@@ -59,9 +59,8 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 			response.Response.Reprompt = nil
 			response.Response.Directives = &arrdialog
 		} else if request.Request.DialogState == "IN_PROGRESS" {
-			jobname = "01524-63806-28098-90622"
-			//jobname := request.Request.Intent.Slots.Jobnumber.Value
-			log.Printf("Job number received : %+v", jobname)
+			jobname = request.Request.Intent.Slots.Jobnumber.Value
+			log.Printf("Job ID received : %+v", jobname)
 
 			log.Printf("Processing conversion request")
 
