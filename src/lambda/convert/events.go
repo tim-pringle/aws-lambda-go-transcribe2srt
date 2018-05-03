@@ -79,22 +79,38 @@ type OutputSpeech struct {
 }
 
 type Directives struct {
-	Type         string `json:"type,omitempty"`
-	SlotToElicit string `json:"slotToElicit,omitempty"`
+	Type          string `json:"type,omitempty"`
+	SlotToElicit  string `json:"slotToElicit,omitempty"`
+	UpdatedIntent string `json:"updatedIntent"`
 }
 
 type Response struct {
-	OutputSpeech     OutputSpeech `json:"outputSpeech,omitempty"`
-	Card             *Card        `json:"card,omitempty"`
-	Reprompt         *Reprompt    `json:"reprompt,omitempty"`
-	ShouldEndSession bool         `json:"shouldEndSession"`
-	Directives       []Directives `json:"directives,omitempty"`
+	OutputSpeech     *OutputSpeech     `json:"outputSpeech,omitempty"`
+	Card             *Card             `json:"card,omitempty"`
+	Reprompt         *Reprompt         `json:"reprompt,omitempty"`
+	ShouldEndSession bool              `json:"shouldEndSession"`
+	Directives       *[]DialogDelegate `json:"directives,omitempty"`
 }
 
 type AlexaResponse struct {
 	Version           string             `json:"version,omitempty"`
 	SessionAttributes *SessionAttributes `json:"sessionAttributes,omitempty"`
 	Response          Response           `json:"response,omitempty"`
+}
+
+type DialogDelegate struct {
+	Type          string `json:"type"`
+	UpdatedIntent *struct {
+		Name               string `json:"name"`
+		ConfirmationStatus string `json:"confirmationStatus"`
+		Slots              struct {
+			String struct {
+				Name               string `json:"name"`
+				Value              string `json:"value"`
+				ConfirmationStatus string `json:"confirmationStatus"`
+			} `json:"string"`
+		} `json:"slots"`
+	}
 }
 
 type LexResponse struct {
@@ -108,4 +124,12 @@ type LexResponse struct {
 			Content     string `json:"content"`
 		} `json:"message"`
 	} `json:"dialogAction"`
+}
+
+type JobResponse struct {
+	Jobnumber struct {
+		Name               string `json:"name"`
+		Value              string `json:"value"`
+		ConfirmationStatus string `json:"confirmationStatus"`
+	} `json:"jobnumber"`
 }

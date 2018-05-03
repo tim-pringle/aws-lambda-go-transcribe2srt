@@ -23,11 +23,10 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 
 	//Lets log the request for reference
 	log.Printf("-----------------EVENT INFO-------------------")
-	log.Printf(streventinfo)
+	log.Printf("%+v", streventinfo)
 	log.Printf("-----------------EVENT INFO-------------------")
 
 	//Lets have a look at the request
-
 	//Alex Request
 	if (strings.Contains(streventinfo, "LaunchRequest")) || (strings.Contains(streventinfo, "IntentRequest")) || (strings.Contains(streventinfo, "SessionEndedRequest")) {
 		var request AlexaRequest
@@ -36,21 +35,30 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 		if err != nil {
 			log.Printf("Problem encountered unmarshalling request to Alex Response struct")
 		}
-		log.Printf("-----------------MARSHALED DATA-------------------")
-		log.Printf("%+v", request)
-		log.Printf("-----------------MARSHALED DATA-------------------")
 
 		var response AlexaResponse
+		var arrdialog []DialogDelegate
+		var dialog DialogDelegate
+
+		dialog.Type = "Dialog.Delegate"
+		dialog.UpdatedIntent = nil
+		//dialog.UpdatedIntent.Name = "String"
+		//dialog.UpdatedIntent.ConfirmationStatus = "NONE"
+		//dialog.UpdatedIntent.Slots.String.Name = "string"
+		//dialog.UpdatedIntent.Slots.String.Value = "string"
+		//dialog.UpdatedIntent.Slots.String.ConfirmationStatus = "NONE"
+
+		arrdialog = append(arrdialog, dialog)
+
 		response.Version = "1.0"
-		response.Response.OutputSpeech.Type = "PlainText"
-		response.Response.OutputSpeech.Text = "Chip and Clouds life is none of your business Tim. I think you'd better watch yourself otherwise there will be many many animals with tiny paws tapping at your window!"
-		response.SessionAttributes = nil
+		response.Response.OutputSpeech = nil
 		response.Response.Card = nil
 		response.Response.Reprompt = nil
-		response.Response.ShouldEndSession = true
+		response.Response.Directives = &arrdialog
 
+		strResponse, _ := json.Marshal(response)
 		log.Printf("-----------------LAMBDA RESPONSE-------------------")
-		log.Printf("%+v", response)
+		log.Printf("%+v", string(strResponse))
 		log.Printf("-----------------LAMBDA REPSONSE-------------------")
 		return response, nil
 		//jobname = "01524-63806-28098-90622"
