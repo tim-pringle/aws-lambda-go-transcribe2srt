@@ -4,11 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/transcribeservice"
+	"github.com/tim-pringle/go-aws/transcribe"
 )
 
 var (
@@ -40,21 +47,98 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 		var arrdialog []DialogDelegate
 		var dialog DialogDelegate
 
-		dialog.Type = "Dialog.Delegate"
-		dialog.UpdatedIntent = nil
-		//dialog.UpdatedIntent.Name = "String"
-		//dialog.UpdatedIntent.ConfirmationStatus = "NONE"
-		//dialog.UpdatedIntent.Slots.String.Name = "string"
-		//dialog.UpdatedIntent.Slots.String.Value = "string"
-		//dialog.UpdatedIntent.Slots.String.ConfirmationStatus = "NONE"
+		//Depending on the dialog state there needs to be a different action.
+		//STARTED --> IN_PROGRESS --> xxxx --> COMPLETED
+		if request.Request.DialogState == "STARTED" {
+			dialog.Type = "Dialog.Delegate"
+			dialog.UpdatedIntent = nil
+			arrdialog = append(arrdialog, dialog)
+			response.Version = "1.0"
+			response.Response.OutputSpeech = nil
+			response.Response.Card = nil
+			response.Response.Reprompt = nil
+			response.Response.Directives = &arrdialog
+		} else if request.Request.DialogState == "IN_PROGRESS" {
+			jobname = "01524-63806-28098-90622"
+			//jobname := request.Request.Intent.Slots.Jobnumber.Value
+			log.Printf("Job number received : %+v", jobname)
 
-		arrdialog = append(arrdialog, dialog)
+			log.Printf("Processing conversion request")
 
-		response.Version = "1.0"
-		response.Response.OutputSpeech = nil
-		response.Response.Card = nil
-		response.Response.Reprompt = nil
-		response.Response.Directives = &arrdialog
+			sess, _ := session.NewSessionWithOptions(session.Options{
+				Config:  aws.Config{Region: aws.String("eu-west-1")},
+				Profile: "development",
+			})
+
+			log.Printf("Job name : %s", jobname)
+			log.Printf("Creating new session")
+			transcriber := transcribeservice.New(sess)
+
+			log.Printf("Getting transcription job")
+			transcriptionjoboutput, err := transcriber.GetTranscriptionJob(&transcribeservice.GetTranscriptionJobInput{
+				TranscriptionJobName: &jobname,
+			})
+
+			if err != nil {
+				ErrMsg := errors.New(err.Error())
+				log.Printf("%s", err.Error())
+				return "", ErrMsg
+			}
+
+			strStatus := *(transcriptionjoboutput.TranscriptionJob.TranscriptionJobStatus)
+			log.Printf("Job status is %s", strStatus)
+
+			if strStatus == "FAILED" {
+				return "", ErrTranscribeFailure
+			}
+			if strStatus == "IN_PROGRESS" {
+				return "", ErrTranscribeRunning
+			}
+
+			var uri *string
+			uri = transcriptionjoboutput.TranscriptionJob.Transcript.TranscriptFileUri
+			log.Printf("URI is %s", *uri)
+
+			resp, _ := http.Get(*uri)
+			defer resp.Body.Close()
+			body, _ := ioutil.ReadAll(resp.Body)
+
+			//str := string(body[:])
+
+			//If there's an error, print the error
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			log.Printf(string(body))
+
+			// initialize our variable to hold the json
+			var awstranscript transcribe.Awstranscript
+			var index = 0
+			// we unmarshal our byteArray which contains our
+			// jsonFile's content into 'awstranscript' which we defined above
+			json.Unmarshal(body, &awstranscript)
+			transcription := awstranscript.Results.Transcripts
+			var text = ""
+			for index = 0; index < len(transcription); {
+				text = transcription[index].Transcript
+				index++
+			}
+			log.Printf("The text will be : %s", text)
+
+			var os OutputSpeech
+
+			os.Text = text
+			os.Type = "PlainText"
+
+			response.Version = "1.0"
+			response.Response.OutputSpeech = &os
+			//response.Response.Card = nil
+			//response.Response.Reprompt = nil
+			log.Printf("%+v", response)
+			//response.Response.Directives = nil
+
+		}
 
 		strResponse, _ := json.Marshal(response)
 		log.Printf("-----------------LAMBDA RESPONSE-------------------")

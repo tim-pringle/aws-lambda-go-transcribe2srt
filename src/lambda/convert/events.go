@@ -3,52 +3,64 @@ package main
 import "time"
 
 type AlexaRequest struct {
+	Version string `json:"version"`
+	Session struct {
+		New         bool   `json:"new"`
+		SessionID   string `json:"sessionId"`
+		Application struct {
+			ApplicationID string `json:"applicationId"`
+		} `json:"application"`
+		User struct {
+			UserID string `json:"userId"`
+		} `json:"user"`
+	} `json:"session"`
 	Context struct {
 		AudioPlayer struct {
 			PlayerActivity string `json:"playerActivity"`
 		} `json:"AudioPlayer"`
 		Display struct {
+			Token string `json:"token"`
 		} `json:"Display"`
 		System struct {
-			APIAccessToken string `json:"apiAccessToken"`
-			APIEndpoint    string `json:"apiEndpoint"`
-			Application    struct {
+			Application struct {
 				ApplicationID string `json:"applicationId"`
 			} `json:"application"`
+			User struct {
+				UserID string `json:"userId"`
+			} `json:"user"`
 			Device struct {
 				DeviceID            string `json:"deviceId"`
 				SupportedInterfaces struct {
 					AudioPlayer struct {
 					} `json:"AudioPlayer"`
 					Display struct {
-						MarkupVersion   string `json:"markupVersion"`
 						TemplateVersion string `json:"templateVersion"`
+						MarkupVersion   string `json:"markupVersion"`
 					} `json:"Display"`
 				} `json:"supportedInterfaces"`
 			} `json:"device"`
-			User struct {
-				UserID string `json:"userId"`
-			} `json:"user"`
+			APIEndpoint    string `json:"apiEndpoint"`
+			APIAccessToken string `json:"apiAccessToken"`
 		} `json:"System"`
 	} `json:"context"`
 	Request struct {
-		Locale                     string    `json:"locale"`
-		RequestID                  string    `json:"requestId"`
-		ShouldLinkResultBeReturned bool      `json:"shouldLinkResultBeReturned"`
-		Timestamp                  time.Time `json:"timestamp"`
-		Type                       string    `json:"type"`
+		Type      string    `json:"type"`
+		RequestID string    `json:"requestId"`
+		Timestamp time.Time `json:"timestamp"`
+		Locale    string    `json:"locale"`
+		Intent    struct {
+			Name               string `json:"name"`
+			ConfirmationStatus string `json:"confirmationStatus"`
+			Slots              struct {
+				Jobnumber struct {
+					Name               string `json:"name"`
+					Value              string `json:"value"`
+					ConfirmationStatus string `json:"confirmationStatus"`
+				} `json:"jobnumber"`
+			} `json:"slots"`
+		} `json:"intent"`
+		DialogState string `json:"dialogState"`
 	} `json:"request"`
-	Session struct {
-		Application struct {
-			ApplicationID string `json:"applicationId"`
-		} `json:"application"`
-		New       bool   `json:"new"`
-		SessionID string `json:"sessionId"`
-		User      struct {
-			UserID string `json:"userId"`
-		} `json:"user"`
-	} `json:"session"`
-	Version string `json:"version"`
 }
 
 type SessionAttributes struct {
