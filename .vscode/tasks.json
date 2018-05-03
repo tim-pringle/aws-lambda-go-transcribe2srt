@@ -1,0 +1,17 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "GoBuild!",
+            "type": "shell",
+            "command": "cd ${fileDirname} && GOOS=linux go build -o main && zip deployment.zip main && aws s3 cp deployment.zip s3://tim-training-thing/deployment.zip --profile development && aws lambda update-function-code --function-name parsingtest --s3-bucket tim-training-thing --s3-key deployment.zip --profile development && rm deployment.zip && rm main",
+            "cwd": "${fileDirname}",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
