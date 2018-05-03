@@ -38,7 +38,7 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 	if (strings.Contains(streventinfo, "LaunchRequest")) || (strings.Contains(streventinfo, "IntentRequest")) || (strings.Contains(streventinfo, "SessionEndedRequest")) {
 		var request AlexaRequest
 		err := json.Unmarshal(data, &request)
-		log.Printf("Alexa request received")
+		log.Printf("A request from Alexa has been received")
 		if err != nil {
 			log.Printf("Problem encountered unmarshalling request to Alex Response struct")
 		}
@@ -50,6 +50,7 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 		//Depending on the dialog state there needs to be a different action.
 		//STARTED --> IN_PROGRESS --> xxxx --> COMPLETED
 		if request.Request.DialogState == "STARTED" {
+			log.Printf("DialogueState is STARTED, requesting delegation")
 			dialog.Type = "Dialog.Delegate"
 			dialog.UpdatedIntent = nil
 			arrdialog = append(arrdialog, dialog)
@@ -58,10 +59,35 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 			response.Response.Card = nil
 			response.Response.Reprompt = nil
 			response.Response.Directives = &arrdialog
-		} else if request.Request.DialogState == "IN_PROGRESS" {
-			jobname = request.Request.Intent.Slots.Jobnumber.Value
-			log.Printf("Job ID received : %+v", jobname)
+			strResponse, _ := json.Marshal(response)
+			log.Printf("-----------------DELEGATION REQUEST-------------------")
+			log.Printf("%+v", string(strResponse))
+			log.Printf("-----------------DELEGATION REQUEST-------------------")
+			return response, nil
 
+		} else if request.Request.DialogState == "IN_PROGRESS" {
+			log.Printf("DialogueState is IN_PROGRESS, parsing job data")
+			jbname := request.Request.Intent.Slots.Jobnumber.Value
+			//You must use a custom slot format - Alexa does not accept 20 characters in length
+			if len(jbname) < 20 {
+				var os OutputSpeech
+
+				os.Text = fmt.Sprintf("The suppled job number of %s is not valid", jbname)
+				os.Type = "PlainText"
+
+				response.Version = "1.0"
+				response.Response.OutputSpeech = &os
+				return response, nil
+
+			}
+			log.Printf("Received: %s", jbname)
+			jobname = fmt.Sprintf("%s-%s-%s-%s", jbname[0:5], jbname[5:10], jbname[10:15], jbname[15:20])
+			if err != nil {
+				log.Printf("%s", err.Error())
+				return err.Error(), nil
+			}
+
+			//log.Printf("%s", jobname)
 			log.Printf("Processing conversion request")
 
 			sess, _ := session.NewSessionWithOptions(session.Options{
@@ -132,18 +158,15 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 
 			response.Version = "1.0"
 			response.Response.OutputSpeech = &os
-			//response.Response.Card = nil
-			//response.Response.Reprompt = nil
-			log.Printf("%+v", response)
-			//response.Response.Directives = nil
+
+			strResponse, _ := json.Marshal(response)
+			log.Printf("-----------------IN PROCESS REQUEST-------------------")
+			log.Printf("%+v", string(strResponse))
+			log.Printf("-----------------IN PROCESS REQUEST-------------------")
+			return response, nil
 
 		}
 
-		strResponse, _ := json.Marshal(response)
-		log.Printf("-----------------LAMBDA RESPONSE-------------------")
-		log.Printf("%+v", string(strResponse))
-		log.Printf("-----------------LAMBDA REPSONSE-------------------")
-		return response, nil
 		//jobname = "01524-63806-28098-90622"
 		//subtitles, converterror := Convert(jobname)
 
