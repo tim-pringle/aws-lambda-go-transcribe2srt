@@ -13,8 +13,6 @@ import (
 
 func main() {
 
-	//Set the S3 uri prefix and create a unique guid to be used as the job name
-
 	bucket := flag.String("bucket", "tim-training-thing", "The s3 bucket to upload to")
 	filename := flag.String("filename", "", "The file to be uploaded")
 	flag.Parse()

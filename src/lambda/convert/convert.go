@@ -69,8 +69,6 @@ func Convert(jobname string) (string, error) {
 	defer response.Body.Close()
 	body, _ := ioutil.ReadAll(response.Body)
 
-	//str := string(body[:])
-
 	//If there's an error, print the error
 	if err != nil {
 		fmt.Println(err)

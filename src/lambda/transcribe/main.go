@@ -7,13 +7,12 @@ import (
 	"log"
 	"strings"
 
-	"github.com/tim-pringle/go-misc/misc"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/transcribeservice"
+	"github.com/tim-pringle/go-misc/misc"
 )
 
 var (
@@ -21,9 +20,9 @@ var (
 	ErrNameNotProvided = errors.New("no name was provided in the HTTP body")
 )
 
-// Handler is your Lambda function handler
-// It uses Amazon API Gateway request/responses provided by the aws-lambda-go/events package,
-// However you could use other event sources (S3, Kinesis etc), or JSON-decoded primitive types such as 'string'.
+// Handler is thr Lambda function handler
+// It uses an S3 event source, with the lambda function being trigged
+// When a create object event occurs on an S3 bucket.
 func Handler(ctx context.Context, s3Event events.S3Event) {
 	for _, record := range s3Event.Records {
 		s3 := record.S3

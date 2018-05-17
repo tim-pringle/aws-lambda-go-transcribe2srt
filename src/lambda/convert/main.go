@@ -68,7 +68,7 @@ func Handler(ctx context.Context, eventinfo interface{}) (interface{}, error) {
 		} else if request.Request.DialogState == "IN_PROGRESS" {
 			log.Printf("DialogueState is IN_PROGRESS, parsing job data")
 			jbname := request.Request.Intent.Slots.Jobnumber.Value
-			//You must use a custom slot format - Alexa does not accept 20 characters in length
+			//You must use a custom slot format - Alexa does not accept numbers of characters in length
 			if len(jbname) < 20 {
 				var os OutputSpeech
 
