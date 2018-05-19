@@ -31,27 +31,22 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 
 	// stdout and stderr are sent to AWS CloudWatch Logs
 	fmt.Printf("S3 Event : %s\n", streventinfo)
-
+	// interate through each record entry in the event data
 	for _, record := range s3Event.Records {
 		s3 := record.S3
 		key := s3.Object.Key
+		//obtain the position that represents the file suffix, including the period.
 		index := (len(key)) - 4
+		// create a substring that represents from index position to to the end of the string
 		substring := key[index:]
 		fmt.Printf("The file suffix is : %s\n", substring)
+		// terminate script is the file is not an mp4 file
 		if strings.ToUpper(substring) != ".MP4" {
 			fmt.Printf("The object %s is not an mp4 file, exiting", s3.Object.Key)
 			return
 		}
 
-		jobname := misc.GUID()
-		log.Printf("Job name created :  %s\n", jobname)
-
-		joburi := fmt.Sprintf("https://s3-eu-west-1.amazonaws.com/%s/%s", s3.Bucket.Name, s3.Object.Key)
-		log.Printf("Job uri : %s\n", joburi)
-
-		mediaformat := "mp4"
-		languagecode := "en-US"
-
+		// open a new session
 		sess, _ := session.NewSessionWithOptions(session.Options{
 			Config:  aws.Config{Region: aws.String("eu-west-1")},
 			Profile: "development",
@@ -59,6 +54,8 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 
 		log.Printf("Opening Transcribe session\n")
 		transcriber := transcribeservice.New(sess)
+
+		// exit if unable to create a Transcribe session
 		if transcriber == nil {
 			log.Printf("Unable to create Transcribe session\n")
 			return
@@ -66,10 +63,18 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 			log.Printf("Transcribe session successfully created\n")
 		}
 
+		// create a random id for the jobname
+		jobname := misc.GUID()
+		mediafileuri := fmt.Sprintf("https://s3-eu-west-1.amazonaws.com/%s/%s", s3.Bucket.Name, s3.Object.Key)
+		log.Printf("Job name :  %s\nMediaFileUri : %s\n", jobname, mediafileuri)
+
+		mediaformat := "mp4"
+		languagecode := "en-US"
+
 		log.Printf("Creating transcription job\n")
 
 		var StrucMedia transcribeservice.Media
-		StrucMedia.MediaFileUri = &joburi
+		StrucMedia.MediaFileUri = &mediafileuri
 
 		transcriber.StartTranscriptionJob(&transcribeservice.StartTranscriptionJobInput{
 			TranscriptionJobName: &jobname,
