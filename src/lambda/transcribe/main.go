@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -24,21 +25,26 @@ var (
 // It uses an S3 event source, with the Lambda function being trigged
 // when a CreateObject event occurs on an S3 bucket that has Events configured
 func Handler(ctx context.Context, s3Event events.S3Event) {
+	//Marshal the eventinfo
+	data, _ := json.Marshal(s3Event)
+	streventinfo := string(data)
+
+	// stdout and stderr are sent to AWS CloudWatch Logs
+	fmt.Printf("S3 Event : %s\n", streventinfo)
+
 	for _, record := range s3Event.Records {
 		s3 := record.S3
-
-		fmt.Printf("[%s - %s] Bucket = %s, Key = %s  URL DecodedKey = %s \n", record.EventSource, record.EventTime, s3.Bucket.Name, s3.Object.Key, s3.Object.URLDecodedKey)
-		var key string = s3.Object.Key
+		key := s3.Object.Key
 		index := (len(key)) - 4
 		substring := key[index:]
+		fmt.Printf("The file suffix is : %s\n", substring)
 		if strings.ToUpper(substring) != ".MP4" {
-			fmt.Printf("The object %s is not an mp4 file", s3.Object.Key)
+			fmt.Printf("The object %s is not an mp4 file, exiting", s3.Object.Key)
 			return
 		}
-		// stdout and stderr are sent to AWS CloudWatch Logs
 
 		jobname := misc.GUID()
-		log.Printf("Job name created %s\n", jobname)
+		log.Printf("Job name created :  %s\n", jobname)
 
 		joburi := fmt.Sprintf("https://s3-eu-west-1.amazonaws.com/%s/%s", s3.Bucket.Name, s3.Object.Key)
 		log.Printf("Job uri : %s\n", joburi)
@@ -55,6 +61,7 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 		transcriber := transcribeservice.New(sess)
 		if transcriber == nil {
 			log.Printf("Unable to create Transcribe session\n")
+			return
 		} else {
 			log.Printf("Transcribe session successfully created\n")
 		}
@@ -71,6 +78,8 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 			LanguageCode:         &languagecode,
 		})
 	}
+	log.Printf("Complete")
+
 }
 
 func main() {
