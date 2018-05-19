@@ -25,7 +25,8 @@ var (
 	ErrJobDoesntExist     = errors.New("The transcripting job does not exist")
 )
 
-//Convert is the script that is called by the appropriate requestors to provide an srt file
+//Convert receives a Transcribe job identifier, retrieves the job data and then converts
+//the transcription content into an srt format, which is returned to the caller
 func Convert(jobname string) (string, error) {
 
 	// stdout and stderr are sent to AWS CloudWatch Logs
@@ -41,9 +42,10 @@ func Convert(jobname string) (string, error) {
 	transcriber := transcribeservice.New(sess)
 
 	log.Printf("Getting transcription job")
-	transcriptionjoboutput, err := transcriber.GetTranscriptionJob(&transcribeservice.GetTranscriptionJobInput{
+	transcriptionjobinput := transcribeservice.GetTranscriptionJobInput{
 		TranscriptionJobName: &jobname,
-	})
+	}
+	transcriptionjoboutput, err := transcriber.GetTranscriptionJob(&transcriptionjobinput)
 
 	if err != nil {
 		ErrMsg := errors.New(err.Error())

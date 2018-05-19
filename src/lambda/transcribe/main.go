@@ -20,9 +20,9 @@ var (
 	ErrNameNotProvided = errors.New("no name was provided in the HTTP body")
 )
 
-// Handler is thr Lambda function handler
-// It uses an S3 event source, with the lambda function being trigged
-// When a create object event occurs on an S3 bucket.
+// Handler is the Lambda function handler
+// It uses an S3 event source, with the Lambda function being trigged
+// when a CreateObject event occurs on an S3 bucket that has Events configured
 func Handler(ctx context.Context, s3Event events.S3Event) {
 	for _, record := range s3Event.Records {
 		s3 := record.S3
