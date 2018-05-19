@@ -9,13 +9,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/tim-pringle/go-aws/transcribe"
-
-	"github.com/tim-pringle/go-misc/misc"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/transcribeservice"
+	"github.com/tim-pringle/go-aws/transcribe"
+	"github.com/tim-pringle/go-misc/misc"
 )
 
 var (
