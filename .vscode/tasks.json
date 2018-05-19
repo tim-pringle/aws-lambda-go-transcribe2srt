@@ -14,7 +14,7 @@
             }
         },
         {
-            "label": "Build Only!",
+            "label": "Go! Build Only!",
             "type": "shell",
             "command": "cd ${fileDirname} && GOOS=linux go build -o main",
             "cwd": "${fileDirname}",
@@ -22,6 +22,17 @@
                 "kind": "build",
                 "isDefault": false
             }
+        },
+        {
+            "label": "Testing - Copy mp4",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}  && aws s3 cp ./test/sample.mp4 s3://tim-training-thing/sample.mp4  --profile development",
+            "cwd": "${fileDirname}",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
         }
     ]
 }
