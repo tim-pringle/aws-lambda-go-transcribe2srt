@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/tim-pringle/transcribe2srt"
 )
 
 var (
@@ -26,16 +27,16 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 
 	// API Gateway Response
 	var response events.APIGatewayProxyResponse
-
-	err := json.Unmarshal(data, &request)
 	if len(request.Body) < 1 {
 		response.Body = "Empty request body"
-		response.StatusCode = 200
+		response.StatusCode = 400
 		return response, nil
 	}
 
+	json.Unmarshal(data, &request)
+
 	jobname = request.Body
-	subtitles, converterror := Convert(jobname)
+	subtitles, converterror := transcribe2srt.Convert(jobname)
 
 	if converterror != nil {
 		response.Body = "Server error"

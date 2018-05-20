@@ -6,14 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/transcribeservice"
-	"github.com/tim-pringle/go-misc/misc"
+	"github.com/tim-pringle/transcribe2srt"
 )
 
 var (
@@ -34,17 +33,9 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 	// interate through each record entry in the event data
 	for _, record := range s3Event.Records {
 		s3 := record.S3
-		key := s3.Object.Key
-		//obtain the position that represents the file suffix, including the period.
-		index := (len(key)) - 4
-		// create a substring that represents from index position to to the end of the string
-		substring := key[index:]
-		fmt.Printf("The file suffix is : %s\n", substring)
+
+		fmt.Printf("Object : %s\n", s3.Object.Key)
 		// terminate script is the file is not an mp4 file
-		if strings.ToUpper(substring) != ".MP4" {
-			fmt.Printf("The object %s is not an mp4 file, exiting", s3.Object.Key)
-			return
-		}
 
 		// open a new session
 		sess, _ := session.NewSessionWithOptions(session.Options{
@@ -64,7 +55,7 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 		}
 
 		// create a random id for the jobname
-		jobname := misc.GUID()
+		jobname := transcribe2srt.GUID()
 		mediafileuri := fmt.Sprintf("https://s3-eu-west-1.amazonaws.com/%s/%s", s3.Bucket.Name, s3.Object.Key)
 		log.Printf("Job name :  %s\nMediaFileUri : %s\n", jobname, mediafileuri)
 
