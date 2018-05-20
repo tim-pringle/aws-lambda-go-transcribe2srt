@@ -39,7 +39,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	subtitles, converterror := transcribe2srt.Convert(jobname)
 
 	if converterror != nil {
-		response.Body = "Server error"
+		response.Body = converterror.Error()
 		response.StatusCode = 400
 	} else {
 		response.Body = subtitles
