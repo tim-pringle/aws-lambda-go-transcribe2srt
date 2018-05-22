@@ -3,22 +3,30 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/transcribeservice"
-	"github.com/tim-pringle/transcribe2srt"
 )
 
-var (
-	// ErrNameNotProvided is thrown when a name is not provided
-	ErrNameNotProvided = errors.New("no name was provided in the HTTP body")
-)
+//GUID - generates a unique identifier
+func GUID() (guid string) {
+	ad, err := time.Parse("02-01-2006", "01-01-1970")
+
+	if err != nil {
+	}
+
+	timesince := time.Since(ad).Nanoseconds()
+	strsince := strconv.FormatInt(timesince, 10)
+	guid = fmt.Sprintf("0" + strsince[0:4] + "-" + strsince[4:9] + "-" + strsince[9:14] + "-" + strsince[14:19])
+	return
+}
 
 // Handler is the Lambda function handler
 // It uses an S3 event source, with the Lambda function being trigged
@@ -26,6 +34,8 @@ var (
 func Handler(ctx context.Context, s3Event events.S3Event) {
 	//Marshal the eventinfo
 	data, _ := json.Marshal(s3Event)
+	//Now convert to a string and output
+	//Cloudwatch picks up the json and formats it nicely for us. :)
 	streventinfo := string(data)
 
 	// stdout and stderr are sent to AWS CloudWatch Logs
@@ -35,7 +45,6 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 		s3 := record.S3
 
 		fmt.Printf("Object : %s\n", s3.Object.Key)
-		// terminate script is the file is not an mp4 file
 
 		// open a new session
 		sess, _ := session.NewSessionWithOptions(session.Options{
@@ -55,7 +64,7 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 		}
 
 		// create a random id for the jobname
-		jobname := transcribe2srt.GUID()
+		jobname := GUID()
 		mediafileuri := fmt.Sprintf("https://s3-eu-west-1.amazonaws.com/%s/%s", s3.Bucket.Name, s3.Object.Key)
 		log.Printf("Job name :  %s\nMediaFileUri : %s\n", jobname, mediafileuri)
 
