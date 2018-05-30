@@ -17,10 +17,7 @@ import (
 
 //GUID - generates a unique identifier
 func GUID() (guid string) {
-	ad, err := time.Parse("02-01-2006", "01-01-1970")
-
-	if err != nil {
-	}
+	ad, _ := time.Parse("02-01-2006", "01-01-1970")
 
 	timesince := time.Since(ad).Nanoseconds()
 	strsince := strconv.FormatInt(timesince, 10)
@@ -39,12 +36,12 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 	streventinfo := string(data)
 
 	// stdout and stderr are sent to AWS CloudWatch Logs
-	fmt.Printf("S3 Event : %s\n", streventinfo)
+	log.Printf("S3 Event : %s\n", streventinfo)
 	// interate through each record entry in the event data
 	for _, record := range s3Event.Records {
 		s3 := record.S3
 
-		fmt.Printf("Object : %s\n", s3.Object.Key)
+		log.Printf("Object : %s\n", s3.Object.Key)
 
 		// open a new session
 		sess, _ := session.NewSessionWithOptions(session.Options{
