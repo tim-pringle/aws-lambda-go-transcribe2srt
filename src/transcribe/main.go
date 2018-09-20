@@ -29,11 +29,18 @@ func GUID() (guid string) {
 // It uses an S3 event source, with the Lambda function being trigged
 // when a CreateObject event occurs on an S3 bucket that has Events configured
 func Handler(ctx context.Context, s3Event events.S3Event) {
-	//Marshal the eventinfo
-	data, _ := json.Marshal(s3Event)
+	data, _ := json.Marshal(ctx)
 	//Now convert to a string and output
 	//Cloudwatch picks up the json and formats it nicely for us. :)
 	streventinfo := string(data)
+
+	// stdout and stderr are sent to AWS CloudWatch Logs
+	log.Printf("S3 Event : %s\n", streventinfo)
+	//Marshal the eventinfo
+	data, _ = json.Marshal(s3Event)
+	//Now convert to a string and output
+	//Cloudwatch picks up the json and formats it nicely for us. :)
+	streventinfo = string(data)
 
 	// stdout and stderr are sent to AWS CloudWatch Logs
 	log.Printf("S3 Event : %s\n", streventinfo)
